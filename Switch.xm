@@ -33,7 +33,7 @@
 	return FSSwitchStateOn;
 }
 
-- (void)takeScreenshot
+- (void)reallyTakeScreenshot
 {
 	SBScreenShotter *shot = (SBScreenShotter *)[objc_getClass("SBScreenShotter") sharedInstance];
 	if (shot) {
@@ -43,30 +43,73 @@
 	}
 }
 
+- (BOOL)isAppSwitcherShowing
+{
+	SBUIController *ui = (SBUIController *)[%c(SBUIController) sharedInstanceIfExists];
+	return [ui isAppSwitcherShowing];
+}
+
+- (BOOL)isControlCenterVisible
+{
+	SBControlCenterController *controller = (SBControlCenterController *)[%c(SBControlCenterController) sharedInstanceIfExists];
+	return [controller isVisible];
+}
+
+- (void)dismissControlCenterWithCompletion:(void (^)())completion
+{
+	SBControlCenterController *controller = (SBControlCenterController *)[%c(SBControlCenterController) sharedInstanceIfExists];
+	[controller dismissAnimated:YES completion:^{
+		if (completion)
+			completion();
+	}];
+}
+
+- (void)dismissSwitcherWithCompletion:(void (^)())completion
+{
+	SBUIController *ui = (SBUIController *)[%c(SBUIController) sharedInstanceIfExists];
+	[UIView animateWithDuration:0.0f delay:0.0 options:0 animations:^{
+		[ui dismissSwitcherAnimated:YES];
+	} completion:^(BOOL completed) {
+		if (completed) {
+			if (completion)
+				completion();
+		}
+	}];
+}
+
+- (void)takeScreenshot
+{
+	if (kCFCoreFoundationVersionNumber > 793.00) {
+		BOOL switcher = [self isAppSwitcherShowing];
+		BOOL cc = [self isControlCenterVisible];
+		if (cc && switcher) {
+			[self dismissControlCenterWithCompletion:^{
+				[self dismissSwitcherWithCompletion:^{
+					[self reallyTakeScreenshot];
+				}];
+			}];
+		}
+		else if (cc && !switcher) {
+			[self dismissControlCenterWithCompletion:^{
+				[self reallyTakeScreenshot];
+			}];
+		}
+		else if (!cc && switcher) {
+			[self dismissSwitcherWithCompletion:^{
+				[self reallyTakeScreenshot];
+			}];
+		}
+		else
+			[self reallyTakeScreenshot];
+	} else
+		[self reallyTakeScreenshot];
+}
+
 - (void)applyState:(FSSwitchState)newState forSwitchIdentifier:(NSString *)switchIdentifier
 {
 	if (newState == FSSwitchStateIndeterminate)
 		return;
-	if (kCFCoreFoundationVersionNumber > 793.00) {
-		SBControlCenterController *controller = (SBControlCenterController *)[%c(SBControlCenterController) sharedInstanceIfExists];
-		SBUIController *ui = (SBUIController *)[%c(SBUIController) sharedInstanceIfExists];
-		if (controller && [controller isVisible]) {
-			[controller dismissAnimated:YES completion:^{
-				[self takeScreenshot];
-			}];
-		}
-		if (ui && [ui isAppSwitcherShowing]) {
-			[UIView animateWithDuration:0.0f delay:0.0 options:0 animations:^{
-				[ui dismissSwitcherAnimated:YES];
-			} completion:^(BOOL completed) {
-				if (completed)
-					[self takeScreenshot];
-			}];
-		}
-		else
-			[self takeScreenshot];
-	} else
-		[self takeScreenshot];
+	[self takeScreenshot];
 }
 
 @end
