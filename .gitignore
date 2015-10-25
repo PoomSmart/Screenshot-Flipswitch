@@ -3,3 +3,5 @@ obj
 theos
 _
 FS*.h
+debs
+*.deb

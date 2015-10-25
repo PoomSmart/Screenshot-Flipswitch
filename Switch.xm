@@ -1,5 +1,5 @@
-#import "FSSwitchDataSource.h"
-#import "FSSwitchPanel.h"
+#import <Flipswitch/FSSwitchDataSource.h>
+#import <Flipswitch/FSSwitchPanel.h>
 #import <libactivator/LAActivator.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
@@ -9,7 +9,7 @@
 
 @interface SBScreenShotter : NSObject
 + (SBScreenShotter *)sharedInstance;
-- (BOOL)_isWritingSnapshot; // iOS 8
+- (BOOL)_isWritingSnapshot; // iOS 8+
 - (BOOL)writingScreenshot; // iOS 6 - 7
 - (void)saveScreenshot:(BOOL)save;
 @end
@@ -23,14 +23,19 @@
 @interface SBUIController : NSObject
 + (SBUIController *)sharedInstanceIfExists;
 - (BOOL)isAppSwitcherShowing;
-- (void)dismissSwitcherAnimated:(BOOL)animated;
+- (void)dismissSwitcherAnimated:(BOOL)animated; // iOS 7 - 8
+@end
+
+@interface SBMainSwitcherViewController : UIViewController
++ (SBMainSwitcherViewController *)sharedInstance;
+- (void)dismissSwitcherNoninteractively;
 @end
 
 @implementation ScreenshotFSSwitch
 
 - (FSSwitchState)stateForSwitchIdentifier:(NSString *)switchIdentifier
 {
-	return FSSwitchStateOn;
+	return FSSwitchStateOff;
 }
 
 - (void)reallyTakeScreenshot
@@ -68,7 +73,10 @@
 {
 	SBUIController *ui = (SBUIController *)[%c(SBUIController) sharedInstanceIfExists];
 	[UIView animateWithDuration:0.0f delay:0.0 options:0 animations:^{
-		[ui dismissSwitcherAnimated:YES];
+		if ([ui respondsToSelector:@selector(dismissSwitcherAnimated:)])
+			[ui dismissSwitcherAnimated:YES];
+		else
+			[(SBMainSwitcherViewController *)[%c(SBMainSwitcherViewController) sharedInstance] dismissSwitcherNoninteractively];
 	} completion:^(BOOL completed) {
 		if (completed) {
 			if (completion)
