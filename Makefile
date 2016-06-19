@@ -1,7 +1,7 @@
 SDKVERSION = 7.0
 ARCHS = armv7 arm64
 
-include theos/makefiles/common.mk
+include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = ScreenshotFS
 ScreenshotFS_FILES = Switch.xm

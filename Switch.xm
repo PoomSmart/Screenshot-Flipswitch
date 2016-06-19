@@ -23,7 +23,7 @@
 @interface SBUIController : NSObject
 + (SBUIController *)sharedInstanceIfExists;
 - (BOOL)isAppSwitcherShowing;
-- (void)dismissSwitcherAnimated:(BOOL)animated; // iOS 7 - 8
+- (void)dismissSwitcherAnimated:(BOOL)animated; // iOS 7+
 @end
 
 @interface SBMainSwitcherViewController : UIViewController
