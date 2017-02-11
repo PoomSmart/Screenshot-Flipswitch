@@ -3,8 +3,28 @@
 #import <libactivator/LAActivator.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
+#import "../PS.h"
 
 @interface ScreenshotFSSwitch : NSObject <FSSwitchDataSource>
+@end
+
+@protocol _SBScreenshotProvider // iOS 9.2+
+- (UIImage *)captureScreenshot;
+@end
+
+@interface _SBScreenshotPersistenceCoordinator : NSObject // iOS 9.2+
+- (BOOL)isSaving;
+- (BOOL)_isWritingSnapshot;
+- (void)saveScreenshot:(UIImage *)image withCompletion:(void (^)())completionBlock;
+@end
+
+@interface SBScreenshotManager : NSObject // iOS 9.2+
+- (NSObject <_SBScreenshotProvider> *)_providerForScreen:(UIScreen *)screen;
+- (void)saveScreenshotsWithCompletion:(void (^)())completionBlock;
+@end
+
+@interface UIApplication (iOS92)
+- (SBScreenshotManager *)screenshotManager;
 @end
 
 @interface SBScreenShotter : NSObject
@@ -40,11 +60,16 @@
 
 - (void)reallyTakeScreenshot
 {
-	SBScreenShotter *shot = (SBScreenShotter *)[objc_getClass("SBScreenShotter") sharedInstance];
-	if (shot) {
-		BOOL writing = [shot respondsToSelector:@selector(writingScreenshot)] ? [shot writingScreenshot] : [shot _isWritingSnapshot];
-		if (!writing)
-			[shot saveScreenshot:YES];
+	if (isiOS92Up) {
+		SBScreenshotManager *manager = UIApplication.sharedApplication.screenshotManager;
+		[manager saveScreenshotsWithCompletion:nil];
+	} else {
+		SBScreenShotter *shot = (SBScreenShotter *)[objc_getClass("SBScreenShotter") sharedInstance];
+		if (shot) {
+			BOOL writing = [shot respondsToSelector:@selector(writingScreenshot)] ? [shot writingScreenshot] : [shot _isWritingSnapshot];
+			if (!writing)
+				[shot saveScreenshot:YES];
+		}
 	}
 }
 
@@ -87,7 +112,7 @@
 
 - (void)takeScreenshot
 {
-	if (kCFCoreFoundationVersionNumber > 793.00) {
+	if (isiOS7Up) {
 		BOOL switcher = [self isAppSwitcherShowing];
 		BOOL cc = [self isControlCenterVisible];
 		if (cc && switcher) {
@@ -115,8 +140,6 @@
 
 - (void)applyState:(FSSwitchState)newState forSwitchIdentifier:(NSString *)switchIdentifier
 {
-	if (newState == FSSwitchStateIndeterminate)
-		return;
 	[self takeScreenshot];
 }
 
