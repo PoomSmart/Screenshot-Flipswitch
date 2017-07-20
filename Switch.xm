@@ -3,7 +3,7 @@
 #import <libactivator/LAActivator.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
-#import "../PS.h"
+#import "../../PS.h"
 
 @interface ScreenshotFSSwitch : NSObject <FSSwitchDataSource>
 @end

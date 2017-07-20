@@ -1,7 +1,3 @@
-obj
 .theos
-theos
-_
-FS*.h
-debs
-*.deb
+obj
+packages/*
