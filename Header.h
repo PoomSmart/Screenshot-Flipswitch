@@ -39,6 +39,6 @@
 @end
 
 @interface SBMainSwitcherViewController : UIViewController
-+ (SBMainSwitcherViewController *)sharedInstance;
++ (instancetype)sharedInstance;
 - (void)dismissSwitcherNoninteractively;
 @end
